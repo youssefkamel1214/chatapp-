@@ -10,12 +10,19 @@ class Chatchannelcont extends GetxController{
   Rx<bool>isloading=true.obs;
   final channels=<dynamic>[].obs;
   final users=<dynamic>[].obs;
+  final usernames=<dynamic>[].obs;
+  late String username;
   void get_user(String email)async{
     isloading.update((val) =>isloading.value=true);
-    dynamic data=await FirebaseFirestore.instance.collection('users').doc(email).get();
-    channels.assignAll(data['channels']);
-    users.assignAll(data['users']);
-    isloading.update((val) => isloading.value=false);
+     Stream stream=FirebaseFirestore.instance.collection('users').doc(email).snapshots(includeMetadataChanges: true);
+          stream.listen((data) { 
+          isloading.update((val) =>isloading.value=true);  
+          channels.assignAll(data['channels']);
+          users.assignAll(data['users']);
+          username=data['username'];
+          usernames.assignAll( data['usernames']);  
+          isloading.update((val) => isloading.value=false);
+     });
   }
  void update_search_email(String email){
    searchemail.update((val) { searchemail.value=email;});

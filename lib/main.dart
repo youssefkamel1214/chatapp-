@@ -2,6 +2,7 @@ import 'package:chatapp/controller/Auth_provider.dart';
 import 'package:chatapp/controller/chats_channelcont.dart';
 import 'package:chatapp/screens/AuthScreen.dart';
 import 'package:chatapp/screens/homescreen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -47,7 +48,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner:false,
       home:  StreamBuilder(stream: FirebaseAuth.instance.authStateChanges(),builder: (ctx,snapshot){
         if(snapshot.hasData)
-          return MyHomePage(user: FirebaseAuth.instance.currentUser!,);
+          return MyHomePage(email: FirebaseAuth.instance.currentUser!.email!,);
         else 
           return AuthScreen() ;
       },),

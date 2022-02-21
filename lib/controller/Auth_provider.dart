@@ -41,7 +41,7 @@ Rx<String>passerror=''.obs;
           if(islogin.value)
             userCredential=await auth.signInWithEmailAndPassword(email: email, password: password);
           else{
-           userCredential= await auth.createUserWithEmailAndPassword(email: email, password: password);
+           userCredential= await auth.createUserWithEmailAndPassword(email: email, password: password,);
            FirebaseFirestore.instance.collection
           ('users').doc(email).set({
             'userid':userCredential.user!.uid,
