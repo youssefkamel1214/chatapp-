@@ -2,7 +2,10 @@
 // ignore: file_names
 // ignore_for_file: file_names
 
+import 'dart:io';
+
 import 'package:chatapp/controller/Auth_provider.dart';
+import 'package:chatapp/widgets/image_picking.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 class AuthScreen extends StatelessWidget{
@@ -13,16 +16,22 @@ final _formkey=GlobalKey<FormState>();
   String _password="";
   String _username="";
   void submit(BuildContext context)async{
+
     _authprovider.clear_errors();
     final isvalid=_formkey.currentState!.validate();
     Get.focusScope!.unfocus();
+    if(!_authprovider.islogin.value&&_authprovider.imagepath.isEmpty)
+    {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content:const Text('please pick image'),
+        backgroundColor: Theme.of(context).errorColor,));
+      return;
+    }
     if(isvalid){
       _formkey.currentState!.save();
-     if(await _authprovider.submitAuthForm(_email.trim(), _password.trim(),_username.trim(), context))
+     if (! await _authprovider.submitAuthForm(_email.trim(), _password.trim(),_username.trim(), context))
      {
-       print('good');
-     }
-     else{
+     
        _formkey.currentState!.validate();
      }
     }
@@ -44,7 +53,11 @@ final _formkey=GlobalKey<FormState>();
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-               
+                      Obx(() =>_authprovider.islogin.value==true?Container():
+                      Obx(()=> _authprovider.imagepath.isEmpty?
+                      Imagepicking(function:(val)=>_authprovider.updatefileimage(val))
+                      :Imagepicking(function: (val)=>_authprovider.updatefileimage(val),
+                      imagefile:File( _authprovider.imagepath.value,)) )),
                      TextFormField(
                       key:const ValueKey('email'),
                       onSaved: (val)=>_email=val!,

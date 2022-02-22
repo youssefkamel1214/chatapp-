@@ -2,13 +2,14 @@
 
 import 'package:chatapp/controller/chats_channelcont.dart';
 import 'package:chatapp/screens/chatScreen.dart';
+import 'package:chatapp/widgets/Channelshower.dart';
+import 'package:chatapp/widgets/searchuser.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
-import 'package:get/get_connect/http/src/utils/utils.dart';
 import 'package:intl/intl.dart';
 
 class MyHomePage extends StatelessWidget {
@@ -43,8 +44,9 @@ Chatchannelcont chatchannelcont=Get.find<Chatchannelcont>();
       ) : Text('Chat Channels')
       ),
       actions: [
-        DropdownButton(icon: Icon( Icons.more_vert,
-     color: Theme.of(context).primaryIconTheme.color,),items: [
+        DropdownButton(underline:Container() ,
+        icon: Icon( Icons.more_vert,
+        color: Theme.of(context).primaryIconTheme.color,),items: [
           DropdownMenuItem(child: Row(children:const [
              Icon(Icons.exit_to_app,size: 15,color: Colors.black,),
              SizedBox(width: 8,),
@@ -73,9 +75,10 @@ Chatchannelcont chatchannelcont=Get.find<Chatchannelcont>();
       return alert;
     });
   }
-  movetochatscreen(int index) async {
+  movetochatscreen(int index,List<String> anoimageurl,List<String> useremails) async {
           Get.to(ChatScreen(useremail: email, title: chatchannelcont.usernames[index],
-          id: chatchannelcont.channels[index],username:chatchannelcont.username ,));
+          id: chatchannelcont.channels[index],username:chatchannelcont.username ,
+          imagesurls:anoimageurl,emails: useremails,));
   }
   show_chat_channels(){
     return    StreamBuilder(stream:FirebaseFirestore.instance.collection('chat_channel').
@@ -85,7 +88,7 @@ Chatchannelcont chatchannelcont=Get.find<Chatchannelcont>();
               (){ 
                 if(chatchannelcont.isloading.value||snapshot.connectionState==ConnectionState.waiting)
                   return const Center(child: CircularProgressIndicator(),);
-                if(chatchannelcont.channels.isEmpty)
+                if(chatchannelcont.channels.isEmpty||! snapshot.hasData)
                  return const Center(child: Text('sorry you havent add anyone in channel '),);
                  dynamic allchannels=snapshot.data;
                  allchannels=allchannels.docs;
@@ -103,51 +106,18 @@ Chatchannelcont chatchannelcont=Get.find<Chatchannelcont>();
                   itemCount: allchannels.length,
                   itemBuilder: (ctx,index){
                         int currnindex=
-                        chatchannelcont.channels.indexWhere((element) => element==allchannels[index].id);
+                        chatchannelcont.channels.indexWhere((element) => element==allchannels[index].id),
+                        differindex=allchannels[index]['users'].indexWhere((elment)=>elment==email);
+                        differindex=1-differindex;
                         Duration diff= DateTime.now().difference(allchannels[index]['lasttime'].toDate());
-                       return Container(
-                         height: 85,
-                         padding: const EdgeInsets.all(8.0),
-                         margin:const EdgeInsets.all(10.0),
-                         decoration:  BoxDecoration(
-                           color: Colors.blue,
-                           borderRadius:  BorderRadius.circular(20)
-                         ),
-                         child:Column(
-                         children: [
-                           Row(
-                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                             children: [
-                              const SizedBox(width: 20,),
-                               Expanded(
-                                 child: Column(
-                                   crossAxisAlignment: CrossAxisAlignment.start,
-                                   children: [
-                                     Text(chatchannelcont.usernames[currnindex],
-                                     maxLines: 1,
-                                     style:const TextStyle(fontSize: 18),overflow: TextOverflow.ellipsis,),
-                                     const SizedBox(height: 10,),
-                                     Row(
-                                       children: [
-                                         Expanded(
-                                           child: Text(allchannels[index]['lastmessege'],
-                                                maxLines: 1,
-                                                style:const TextStyle(fontSize: 16),overflow: TextOverflow.ellipsis,),
-                                         ),
-                                         Text(diff.inDays>2?'${DMY.format(allchannels[index]['lasttime'].toDate())} ':
-                                         diff.inDays>0?'Yesterday'
-                                         :'${HM.format(allchannels[index]['lasttime'].toDate())}',style:  const TextStyle(fontSize: 16))
-                                       ],
-                                     )
-                                   ],
-                                 ),
-                               ),
-                              const SizedBox(width: 10,),
-                               IconButton(onPressed: ()=> movetochatscreen(currnindex), icon: const Icon(Icons.chat))
-                             ],
-                           )
-                         ],),
-                       );
+                      final imagesurls = (allchannels[index]['usersimages'] as List).map((e) => e as String).toList();
+                      final useremails = (allchannels[index]['users'] as List).map((e) => e as String).toList();
+                      return ChannelShower(title: chatchannelcont.usernames[currnindex], 
+                      imageurl:  allchannels[index]['usersimages'][differindex]
+                      , lastmessege: allchannels[index]['lastmessege'], type: allchannels[index]['type'], 
+                        time: diff.inDays>2?'${DMY.format(allchannels[index]['lasttime'].toDate())} ': diff.inDays>0?'Yesterday'
+                        :'${HM.format(allchannels[index]['lasttime'].toDate())}', function: ()=>
+                         movetochatscreen(currnindex,imagesurls,useremails));
                   },
                 );
               }
@@ -171,32 +141,14 @@ Chatchannelcont chatchannelcont=Get.find<Chatchannelcont>();
          chatchannelcont.searchemail.value.isEmpty)&&s!=email;
        }).toList() ;
        if(users.length<1)
-           return Center(child: Text("we have found nothing like this"),);
+           return const Center(child: Text("we have found nothing like this"),);
      return ListView.builder(itemCount: users.length,itemBuilder:(contxt,index){
        int currindex=chatchannelcont.users.indexWhere((el)=>el==users[index].id);
-       return Container(
-               margin:const EdgeInsets.all( 5.0),
-               padding:const EdgeInsets.all(8.0),
-               decoration: BoxDecoration(
-                 color: Colors.pink,
-                 borderRadius: BorderRadius.circular(20)
-               ), 
-               child: Column(mainAxisSize: MainAxisSize.min,
-                 children:[ 
-                   Text('user email: ${users[index].id}'),
-                   Text('username :${users[index]['username']}'),
-                   SizedBox(height: 25, child: Row( 
-                     mainAxisAlignment: MainAxisAlignment.spaceAround,
-                     children: [
-                       IconButton(onPressed:()=> addtochannel(users[index] ), icon:Icon( Icons.add)),
-                       IconButton(onPressed: null, icon: Icon(Icons.block)),
-                       IconButton(onPressed:currindex==-1?null:()=> movetochatscreen(currindex)
-                       ,
-                        icon: Icon(Icons.chat))
-                     ],
-                   ))
-                 ]),
-       );
+       return SearchUser(imageurl: users[index]['image_url'], useremail: users[index].id, username: users[index]['username'],
+        isexist: currindex!=-1, function1: ()=> addtochannel(users[index] ), function2: 
+         ()=> 
+         movetochatscreen(currindex,[chatchannelcont.imageurl,users[index]['image_url']],
+         [email,users[index].id]));
      });});
      } ,)
      ;
@@ -205,13 +157,17 @@ Chatchannelcont chatchannelcont=Get.find<Chatchannelcont>();
    chatchannelcont.isloading.update((val) =>chatchannelcont.isloading.value=true);
       if(chatchannelcont.users.contains(anotheruser.id)){
             Fluttertoast.showToast(msg: 'you already in channel with him',toastLength: Toast.LENGTH_SHORT);
+      chatchannelcont.isloading.update((val) =>chatchannelcont.isloading.value=false);
+      
             return;
+      
       }
       dynamic channel = await FirebaseFirestore.instance.collection('chat_channel').
       add({'users':[email,anotheruser.id],
-      'messages':null,
+      'usersimages':[chatchannelcont.imageurl,anotheruser['image_url']],
       'lasttime':Timestamp.now(),
-      'lastmessege':'this channel has no messsage'
+      'lastmessege':' no messsage was sent',
+      'type':'text'
       });
       chatchannelcont.channels.add(channel.id);
       chatchannelcont.users.add(anotheruser.id);
@@ -231,6 +187,7 @@ Chatchannelcont chatchannelcont=Get.find<Chatchannelcont>();
       'users': users,
       'usernames':usernames
       });
+         FirebaseStorage.instance.ref().child('chat_channels').child(channel.id);
          chatchannelcont.isloading.update((val) =>chatchannelcont.isloading.value=false);
          showalertdailog(chatchannelcont.username, anotheruser['username']);
 
