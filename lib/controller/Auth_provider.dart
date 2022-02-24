@@ -13,8 +13,6 @@ Rx<bool>isnonvis=true.obs;
 Rx<String>emailerror=''.obs;
 Rx<String>passerror=''.obs;
  Rx<String> imagepath=''.obs;
- Authprovider(){
- }
  
  change_state(){
    islogin.update((val)=>  islogin.value^=true);

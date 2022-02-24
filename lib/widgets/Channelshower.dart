@@ -56,6 +56,8 @@ class ChannelShower extends StatelessWidget {
                                           textmess(),
                                         if(type=='image')
                                            imagmess(),
+                                        if(type=='sound')
+                                          micmess(),   
                                         const SizedBox(width: 10,),   
                                          Text(time,style:  const TextStyle(fontSize: 16))
                                        ],
@@ -86,6 +88,17 @@ class ChannelShower extends StatelessWidget {
          Icon(Icons.photo),
          SizedBox(width: 10,),
          Text('image was sent')
+       ],
+     ),
+   );
+ }
+Widget micmess() {
+   return Expanded(
+     child: Row(
+       children:const [
+         Icon(Icons.mic),
+         SizedBox(width: 10,),
+         Text('voice was sent')
        ],
      ),
    );

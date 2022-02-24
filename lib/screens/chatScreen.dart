@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:just_audio/just_audio.dart' as jap;
 class ChatScreen extends StatelessWidget{
   const ChatScreen({Key? key,
   required this.useremail,
@@ -23,7 +24,8 @@ class ChatScreen extends StatelessWidget{
 
   @override
   Widget build(BuildContext context) {
-    Get.put(Sendmessegecontroller(useremail: useremail, id: id,username: username));
+        jap.AudioPlayer audioPlayer = jap.AudioPlayer();
+    Get.put(Sendmessegecontroller(useremail: useremail, id: id,username: username,));
     print('chatscreen');
      return Scaffold(
        appBar: AppBar(centerTitle: true,  title:Text(title),),
@@ -31,7 +33,7 @@ class ChatScreen extends StatelessWidget{
          padding:const EdgeInsets.symmetric(horizontal: 5.0),
          child: Column(
            children: [
-             Expanded(child:Messeges(id: id, user_email: useremail,emails: emails,imagesurls: imagesurls,)),
+             Expanded(child:Messeges(id: id, user_email: useremail,emails: emails,imagesurls: imagesurls,audioPlayer: audioPlayer,)),
              NewMesseges()
 
            ],
