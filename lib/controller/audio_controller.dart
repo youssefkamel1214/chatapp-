@@ -18,9 +18,8 @@ class Audiomanger  {
       }
       _url=url;
      await audioPlayer.seek(Duration(milliseconds: 0));
-     Duration dur= await audioPlayer.setUrl(url)??const Duration(milliseconds: 0);
+     Duration dur= await audioPlayer.setFilePath(url)??const Duration(milliseconds: 0);
      return dur;
-     
   }
 
 }

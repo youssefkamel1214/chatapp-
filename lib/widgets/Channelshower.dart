@@ -18,7 +18,7 @@ class ChannelShower extends StatelessWidget {
                          padding: const EdgeInsets.all(8.0),
                          margin:const EdgeInsets.all(10.0),
                          decoration:  BoxDecoration(
-                           color: Colors.blue,
+                           color: Theme.of(context).primaryColor,
                            borderRadius:  BorderRadius.circular(20)
                          ),
                          child:Column(
@@ -57,7 +57,9 @@ class ChannelShower extends StatelessWidget {
                                         if(type=='image')
                                            imagmess(),
                                         if(type=='sound')
-                                          micmess(),   
+                                          micmess(),
+                                        if(type=='video') 
+                                           viedmess(),    
                                         const SizedBox(width: 10,),   
                                          Text(time,style:  const TextStyle(fontSize: 16))
                                        ],
@@ -103,5 +105,15 @@ Widget micmess() {
      ),
    );
  }
-
+Widget viedmess() {
+   return Expanded(
+     child: Row(
+       children:const [
+         Icon(Icons.video_collection_rounded),
+         SizedBox(width: 10,),
+         Text('video was sent')
+       ],
+     ),
+   );
+ }
 }

@@ -113,7 +113,7 @@ final _formkey=GlobalKey<FormState>();
                   ),
                     TextButton(onPressed: ()=>cahngestate(), child: Obx( () =>
                     Text(_authprovider.islogin.value?'change to Sign up':'change to Log in',
-                    style:const TextStyle(color: Colors.pink),))
+                    style:const TextStyle(color: Colors.blue),))
                )
               ],
 

@@ -1,48 +1,41 @@
 import 'package:chatapp/controller/audio_controller.dart';
+import 'package:chatapp/controller/messege_controller.dart';
 import 'package:chatapp/widgets/messegebuble.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 class Messeges extends StatelessWidget{
-     const Messeges({Key? key, 
-     required this.id,
-     required this.user_email,
-     required this.imagesurls,
-     required this.emails,
+      Messeges({Key? key, 
+
      required this.audioPlayer,
      }) : super(key: key);
- final String id;
- final String user_email;
- final List<String>imagesurls;
- final List<String>emails;
-final AudioPlayer audioPlayer;
 
+ final AudioPlayer audioPlayer;
+ // ignore: non_constant_identifier_names
+ final mess_contrl=Get.find<Messegcontroller>(); 
   @override
   Widget build(BuildContext context) {
-     Get.put(Audiomanger(audioPlayer: this.audioPlayer));
-   return StreamBuilder(
-         stream: FirebaseFirestore.instance.collection('chat_channel/$id/messages').
-         orderBy('time',descending: true) .snapshots(),
-         builder:(context,snapshot) {
-           if(snapshot.connectionState==ConnectionState.waiting)
-             return const Center(child: CircularProgressIndicator(),);
-           dynamic docs=snapshot.data;
-           docs= docs.docs;
-           if(docs==null)
-           return Container();
-           return ListView.builder(itemCount: docs.length,reverse: true,
-           itemBuilder: (ctx,index) {
-             
-             int imageindex=emails.indexWhere((element) =>element==docs[index]['email']);
-             return  Messegbuble(isMe: docs[index]['email']==user_email, 
-             key: ValueKey(docs[index].id), messege: docs[index]['content'],type:docs[index]['type'] ,
-              username: docs[index]['username'],imageurl:imagesurls[imageindex] ,
-              duration:docs[index]['type']=='sound'?Duration(milliseconds:  docs[index]['duration']):null ,
-              );
-              }); 
-         } ,
-       );
+   Get.put(Audiomanger(audioPlayer:audioPlayer));
+   return Obx(
+      () =>mess_contrl.messeges.isEmpty?Container(): Obx(
+         ()=>ScrollablePositionedList.builder(itemCount: mess_contrl.messeges.length,reverse: true,
+               itemBuilder: (ctx,index) {
+                 mess_contrl.updateseen(index);
+                 int imageindex=mess_contrl.emails.indexWhere((element) =>element==mess_contrl.messeges[index]['email']);
+                 return  Messegbuble(isMe: mess_contrl.messeges[index]['email']==mess_contrl.useremail,
+                  exte:mess_contrl.messeges[index]['type']=='doc'?mess_contrl.messeges[index]['ext']:null ,key: ValueKey(mess_contrl.messeges[index].id), 
+                  messege: mess_contrl.messeges[index]['content'],type:mess_contrl.messeges[index]['type'] ,
+                  username: mess_contrl.messeges[index]['username'],imageurl:mess_contrl.imagesurls[imageindex] ,
+                  duration:mess_contrl.messeges[index]['type']=='sound'?Duration(milliseconds:  mess_contrl.messeges[index]['duration']):null ,
+                  seen: !(mess_contrl.messeges[index]['seen'].contains(false)&&mess_contrl.messeges[index]['email']==mess_contrl.useremail),
+                  );
+                  },
+                  initialScrollIndex:mess_contrl.inialindex,
+                   )
+       )
+   );
   }
 
 }

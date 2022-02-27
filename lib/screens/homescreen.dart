@@ -1,14 +1,11 @@
 
 
 import 'package:chatapp/controller/chats_channelcont.dart';
-import 'package:chatapp/screens/chatScreen.dart';
 import 'package:chatapp/widgets/Channelshower.dart';
 import 'package:chatapp/widgets/searchuser.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
@@ -16,7 +13,7 @@ class MyHomePage extends StatelessWidget {
    MyHomePage({Key? key,required this.email}) : super(key: key);
   final String email;
 
-Chatchannelcont chatchannelcont=Get.find<Chatchannelcont>();
+final chatchannelcont=Get.find<Chatchannelcont>();
   
   @override
   Widget build(BuildContext context) {
@@ -41,7 +38,7 @@ Chatchannelcont chatchannelcont=Get.find<Chatchannelcont>();
           border: InputBorder.none,
           hintText: 'write heare to search',
         ),
-      ) : Text('Chat Channels')
+      ) :const Text('Chat Channels')
       ),
       actions: [
         DropdownButton(underline:Container() ,
@@ -59,26 +56,6 @@ Chatchannelcont chatchannelcont=Get.find<Chatchannelcont>();
         },)
       ],
     );
-  }
-  showalertdailog(String n1,String n2){
-    final AlertDialog alert=AlertDialog(
-      title: Text( 'Congratalotions $n1'),
-      content: 
-          Text('you and $n2 can talk now through our app hava nice day'),
-      actions: [
-          TextButton(onPressed: (){
-             Navigator.of(Get.context!).pop();
-         }, child: Text('OK'))
-          ],
-         );
-    showDialog(context: Get.context!, builder: (contex){
-      return alert;
-    });
-  }
-  movetochatscreen(int index,List<String> anoimageurl,List<String> useremails) async {
-          Get.to(ChatScreen(useremail: email, title: chatchannelcont.usernames[index],
-          id: chatchannelcont.channels[index],username:chatchannelcont.username ,
-          imagesurls:anoimageurl,emails: useremails,));
   }
   show_chat_channels(){
     return    StreamBuilder(stream:FirebaseFirestore.instance.collection('chat_channel').
@@ -101,7 +78,7 @@ Chatchannelcont chatchannelcont=Get.find<Chatchannelcont>();
                         else 
                               return 0;     
                          });
-                  DateFormat DMY=new DateFormat('dd-MMM-yyyy'),HM=new DateFormat('HH:mm a');
+                  final dmy= DateFormat('dd-MMM-yyyy'),hm= DateFormat('HH:mm a');
                   return ListView.builder(
                   itemCount: allchannels.length,
                   itemBuilder: (ctx,index){
@@ -115,9 +92,9 @@ Chatchannelcont chatchannelcont=Get.find<Chatchannelcont>();
                       return ChannelShower(title: chatchannelcont.usernames[currnindex], 
                       imageurl:  allchannels[index]['usersimages'][differindex]
                       , lastmessege: allchannels[index]['lastmessege'], type: allchannels[index]['type'], 
-                        time: diff.inDays>2?'${DMY.format(allchannels[index]['lasttime'].toDate())} ': diff.inDays>0?'Yesterday'
-                        :'${HM.format(allchannels[index]['lasttime'].toDate())}', function: ()=>
-                         movetochatscreen(currnindex,imagesurls,useremails));
+                        time: diff.inDays>2?'${dmy.format(allchannels[index]['lasttime'].toDate())} ': diff.inDays>0?'Yesterday'
+                        :hm.format(allchannels[index]['lasttime'].toDate()), function: ()=>
+                        chatchannelcont.movetochatscreen(currnindex));
                   },
                 );
               }
@@ -140,56 +117,17 @@ Chatchannelcont chatchannelcont=Get.find<Chatchannelcont>();
          ||element['username'].contains(chatchannelcont.searchemail.value)||
          chatchannelcont.searchemail.value.isEmpty)&&s!=email;
        }).toList() ;
-       if(users.length<1)
+       if(users.isEmpty)
            return const Center(child: Text("we have found nothing like this"),);
      return ListView.builder(itemCount: users.length,itemBuilder:(contxt,index){
        int currindex=chatchannelcont.users.indexWhere((el)=>el==users[index].id);
        return SearchUser(imageurl: users[index]['image_url'], useremail: users[index].id, username: users[index]['username'],
-        isexist: currindex!=-1, function1: ()=> addtochannel(users[index] ), function2: 
-         ()=> 
-         movetochatscreen(currindex,[chatchannelcont.imageurl,users[index]['image_url']],
-         [email,users[index].id]));
+        isexist: currindex!=-1, function1: ()=>chatchannelcont.addtochannel(users[index] ), function2: 
+         ()=>  chatchannelcont.movetochatscreen(currindex)
+         );
      });});
      } ,)
      ;
   }
-  addtochannel(dynamic anotheruser) async{ 
-   chatchannelcont.isloading.update((val) =>chatchannelcont.isloading.value=true);
-      if(chatchannelcont.users.contains(anotheruser.id)){
-            Fluttertoast.showToast(msg: 'you already in channel with him',toastLength: Toast.LENGTH_SHORT);
-      chatchannelcont.isloading.update((val) =>chatchannelcont.isloading.value=false);
-      
-            return;
-      
-      }
-      dynamic channel = await FirebaseFirestore.instance.collection('chat_channel').
-      add({'users':[email,anotheruser.id],
-      'usersimages':[chatchannelcont.imageurl,anotheruser['image_url']],
-      'lasttime':Timestamp.now(),
-      'lastmessege':' no messsage was sent',
-      'type':'text'
-      });
-      chatchannelcont.channels.add(channel.id);
-      chatchannelcont.users.add(anotheruser.id);
-      chatchannelcont.usernames.add(anotheruser['username']);
-
-      final channels=anotheruser['channels'],users=anotheruser['users'],usernames=anotheruser['usernames'];
-      channels.add(channel.id);
-      users.add(email);
-      usernames.add(chatchannelcont.username);
-      FirebaseFirestore.instance.collection('users').doc(email).update({
-        'channels':   chatchannelcont.channels,
-        'users': chatchannelcont.users,
-        'usernames':chatchannelcont.usernames
-      });
-      FirebaseFirestore.instance.collection('users').doc(anotheruser.id).update({
-      'channels':   channels,
-      'users': users,
-      'usernames':usernames
-      });
-         FirebaseStorage.instance.ref().child('chat_channels').child(channel.id);
-         chatchannelcont.isloading.update((val) =>chatchannelcont.isloading.value=false);
-         showalertdailog(chatchannelcont.username, anotheruser['username']);
-
-  }
+ 
 }

@@ -7,10 +7,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 class NewMesseges extends StatelessWidget{
-   NewMesseges({Key? key,}) 
+   NewMesseges({Key? key}) 
   : super(key: key);
   final controller=TextEditingController();
-  final sendmescont=Get.find<Sendmessegecontroller>();
+  final Sendmessegecontroller sendmescont=Get.find<Sendmessegecontroller>();
   ScrollController scrollController =  ScrollController();
 
   @override
@@ -33,9 +33,12 @@ class NewMesseges extends StatelessWidget{
                   }
                 },
                icon: sendmescont.isrecodmode.value?const Icon(Icons.delete):const Icon(Icons.mic)) :Container() ),
-              Obx(()=>sendmescont.message.value.isEmpty&&!sendmescont.isrecodmode.value?IconButton(onPressed: ()=>
-               sendmescont.updatefileimage(context,true,controller),
-               icon: const Icon(Icons.photo_camera_outlined)) :Container() ),
+              Obx(()=>sendmescont.message.value.isEmpty&&!sendmescont.isrecodmode.value?GestureDetector(onTap: ()=>
+               sendmescont.updatefileimage(context,true,controller),onLongPress:()=>sendmescont.updatevediopaht(context, true, controller) ,
+               child: const Icon(Icons.photo_camera_outlined)) :Container() ),
+                Obx(()=>sendmescont.message.value.isEmpty&&!sendmescont.isrecodmode.value?GestureDetector(
+                  onTap: ()=> showbottomsheet(context,controller) ,
+               child: const Icon(Icons.attach_file)) :Container() ),
               Expanded(child: Obx(
               () =>sendmescont.isrecodmode.value?raw_record() : TextField(
                     controller: controller,
@@ -47,7 +50,7 @@ class NewMesseges extends StatelessWidget{
                   )
               )),
               Obx( () {
-                  return sendmescont.waitingforsend.value||sendmescont.imagepath.value.isNotEmpty?const CircularProgressIndicator():  sendmescont.message.isNotEmpty?
+                  return sendmescont.waitingforsend.value||sendmescont.imagepath.value.isNotEmpty||sendmescont.lenthbool.value==0?const CircularProgressIndicator():  sendmescont.message.isNotEmpty?
                   IconButton(onPressed:()=>sendmescont.sendmessge(context, controller), color:Get.theme.primaryColor ,
                    icon:const Icon(Icons.send,)):sendmescont.isrecodmode.value?IconButton(onPressed:()=>
                    sendmescont.sendrecord(context, controller), color:Get.theme.primaryColor ,
@@ -107,6 +110,46 @@ class NewMesseges extends StatelessWidget{
       ],
     );
   }
+
+  showbottomsheet(BuildContext context, TextEditingController controller) {
+     Get.bottomSheet(Container(
+       child: GridView.count(
+         crossAxisCount: 4,
+         crossAxisSpacing: 10,
+         mainAxisSpacing: 10,
+         children: [
+           GestureDetector(onTap: ()=> sendmescont.senddcomuntfile(context, controller),
+             child:const  CircleAvatar(
+               child: Icon(Icons.article_rounded),
+             ),
+           ),
+           GestureDetector(
+             onTap: (){
+               sendmescont.updatevediopaht(context, false, controller);
+             },
+             child:const  CircleAvatar(
+               child: Icon(Icons.video_camera_back),
+             ),
+           ),
+           GestureDetector(
+             onTap: (){
+               sendmescont.updatefileimage(context, false, controller);
+             },
+             child:const  CircleAvatar(
+               child: Icon(Icons.image_outlined),
+             ),
+           ),
+           GestureDetector(
+             onTap: () => sendmescont.sendlocation(context, controller),
+             child:const  CircleAvatar(
+               child: Icon(Icons.location_on),
+             ),
+           ),
+         ],
+       ),
+     ),backgroundColor: Get.theme.accentColor);
+  }
+
 
 }
 

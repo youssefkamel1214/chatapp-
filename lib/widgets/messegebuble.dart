@@ -1,8 +1,20 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math';
-import 'package:chatapp/controller/audio_controller.dart';
+
+import 'package:flowder/flowder.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_sound/flutter_sound.dart';
 import 'package:get/get.dart';
+import 'package:linkwell/linkwell.dart';
+import 'package:open_file/open_file.dart';
+import 'package:chatapp/controller/audio_controller.dart';
+import 'package:chatapp/controller/messege_controller.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:percent_indicator/circular_percent_indicator.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:video_player/video_player.dart';
+
 import 'FullscreenImage.dart';
 
 class Messegbuble extends StatelessWidget {
@@ -12,7 +24,11 @@ class Messegbuble extends StatelessWidget {
  final  String username;
  final  String imageurl;
  final  String type;
+ final bool seen;
+ final  Messegcontroller messegcontroller=Get.find<Messegcontroller>();
  Duration? duration;
+
+  String? exte;
    Messegbuble({
     required this.isMe,
     required this.key,
@@ -20,11 +36,13 @@ class Messegbuble extends StatelessWidget {
     required this.username,
     required this.imageurl,
     required this.type,
-    this.duration
+    required this.seen,
+    this.duration,
+    this.exte
   }) : super(key: key);
   @override
   Widget build(BuildContext context) {
-    double width=min(140.0,14.0* max(messege.length,username.length));
+    double width=min(140.0,16.0* max(messege.length,username.length));
     double stackpadd=120*width/140;
     return Stack(
       children: [
@@ -43,18 +61,35 @@ class Messegbuble extends StatelessWidget {
           ),
           padding:const EdgeInsets.symmetric(vertical: 8.0,horizontal: 16.0),
           margin:const EdgeInsets.symmetric(vertical: 16.0,horizontal: 8.0),
-          width:type=='image'||type=='sound'?null: width,
+          width:type=='image'||type=='sound'||type=='video'?null: width,
           child: 
           Column(
             crossAxisAlignment:isMe? CrossAxisAlignment.start:CrossAxisAlignment.end,
             children: [
               Text(username,style: TextStyle(fontSize: 15 ,color:isMe?Colors.white:Colors.black  ),textAlign: TextAlign.center,),
               if(type=='text')
-                Text(messege,style: TextStyle(fontSize: 14 ,color:isMe?Colors.white:Colors.black ),textAlign: TextAlign.left),
+                LinkWell(messege,style: TextStyle(fontSize: 14 ,color:isMe?Colors.white:Colors.black ),
+                linkStyle:const TextStyle(color: Colors.blue,fontSize: 14),
+                textAlign: TextAlign.left),
             if(type=='image')
                  make_image(context),
             if(type=='sound') 
-                 make_sound(url: messege,duration: duration!,)    
+                 make_sound(url: messege,duration: duration!,id: key.toString(),),
+            if(type=='video')
+                 make_video(isme: isMe,
+                 url: messege,seen: seen,id: key.toString(),), 
+            if(type=='location')
+                 makelocation(messege),  
+            if(type=='doc')   
+                 make_doc(context,messege,exte!),       
+            if(isMe&&type!='video')
+            SizedBox(
+              width: type=='text'||type=='location'?width:type=='image'?150:type=='sound'?216:45,
+              child: Row(mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Icon(seen? Icons.visibility:Icons.visibility_off)
+              ],),
+            )         
             ],
           ),
           )
@@ -75,7 +110,8 @@ class Messegbuble extends StatelessWidget {
                   errorBuilder: (context, error, stackTrace) =>
                   const  Text('Some errors occurred!'),
                   ).image , 
-       )) ],
+       )),
+        ],
     );
   }
   make_image(BuildContext context) {
@@ -102,24 +138,56 @@ class Messegbuble extends StatelessWidget {
           ),
         ),
       ),
-      onTap:imageurl.contains('wiaitng')?null:()=>  Navigator.push(context,
-              MaterialPageRoute(builder: (_) {
-                return FullScreenImage(
+      onTap:imageurl.contains('wiaitng')?null:()=>  Get.to(()=>
+    FullScreenImage(
                   imageUrl:
                   messege,
                   tag: key.toString(),
-                );
-              })),
+                 ))
+
     );
+  }
+
+ Widget makelocation(String messege) {
+   return 
+        Center(
+          child: IconButton(onPressed: ()async{       
+             await launch(messege);
+          }, icon:const Icon (Icons.location_on,size: 30,)),
+        );
+ }
+
+  make_doc(BuildContext context, String messege,String ext) {
+    return Center(
+          child: IconButton(onPressed: ()async{       
+             Directory? dic=await getExternalStorageDirectory();
+             if(dic==null)
+             throw 'un acceptable';
+             String filepath=dic.path+'/chats/documnts';
+             String filename=key.toString()+'.'+ext; 
+             if(await  file_exists(filename,filepath)==false)
+           {  dowlouadfromurl(filename, 'documnts', messege, (Value){
+             }, (){
+               OpenFile.open(filepath+'/$filename');
+             });
+           }
+           else{
+              OpenFile.open(filepath+'/$filename');
+           }
+          }, icon:const Icon (Icons.article_rounded,size: 30,)),
+        );
   }
 }
 class make_sound extends StatefulWidget{
+
   const make_sound({Key? key,
   required this.url,
   required this.duration,
+  required this.id,
   }) : super(key: key);
   final String url;
   final Duration duration;
+  final  String id;
   @override
   State<make_sound> createState() => _make_soundState();
 }
@@ -130,10 +198,16 @@ class _make_soundState extends State<make_sound> {
   final audiomanger=Get.find<Audiomanger>();
   StreamSubscription<Duration>? listhener;
   String error='';
+      String url2 = '';
+
+  DownloaderCore? _core;
+
+  double _percent=0.0;
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
+    inilze_pathes();
     max_dur=widget.duration;
   }
   @override
@@ -144,7 +218,15 @@ class _make_soundState extends State<make_sound> {
    return Row(
    children: [
      if(still_loading)
-       const CircularProgressIndicator(),
+        CircularPercentIndicator(
+        radius: 20,
+        lineWidth: 1,
+        percent: _percent,
+        animation: true,
+        animationDuration: 100,
+        progressColor: Colors.pink,
+        backgroundColor: Get.isDarkMode?Colors.black:Colors.white,
+       ),
      if(!still_loading) 
         IconButton(onPressed:()=> !playing?start_play():pause_play(), icon:Icon(playing?Icons.pause:Icons.play_arrow) ),
         Text(todis,style: TextStyle(fontSize: 14),),
@@ -165,12 +247,13 @@ class _make_soundState extends State<make_sound> {
         still_loading=true;
         playing=false;
       });
-      Duration tmp =await audiomanger.strartnew(url: widget.url);
+           
+      Duration tmp =await audiomanger.strartnew(url: url2);
       setState(() {
         max_dur=tmp;
       });
       listhener= audiomanger.audioPlayer.positionStream.listen((event) {
-       if(audiomanger.URL!=widget.url)
+       if(audiomanger.URL!=url2)
             cancel_stream();  
       setState(() {
       ind=event;
@@ -200,10 +283,12 @@ class _make_soundState extends State<make_sound> {
     audiomanger.audioPlayer.stop();
     audiomanger.make_empty();
     }
+    if(_core!=null&&still_loading)
+    _core!.cancel();   
     super.dispose();
   }
   start_play()async {
-    if(audiomanger.URL!=widget.url)
+    if(audiomanger.URL!=url2)
             await inlaze_var();
     audiomanger.audioPlayer.play();
     setState(() {
@@ -226,4 +311,182 @@ class _make_soundState extends State<make_sound> {
      playing=false;
    });
   }
+
+  Future<void> dowlnload_file() async {
+    _core=await dowlouadfromurl( '${widget.id}.aac', 'records',widget.url,(val){
+      setState(() {
+        _percent=val;
+      });
+    },null);
+  }
+
+  void inilze_pathes() async{
+    setState(() {
+      still_loading=true;
+    });
+      Directory? dic= await getExternalStorageDirectory();
+            if(dic==null)
+                throw 'un acceplte';
+            String filepath =dic.path+'/chats/records';
+            if(await  file_exists('${widget.id}.aac',filepath)==false)
+                  await   dowlnload_file();   
+      url2 = filepath+'/${widget.id}.aac';
+   url2 = filepath+'/${widget.id}.aac';
+    setState(() {
+      still_loading=false;
+    });
+  }
+}
+class make_video extends StatefulWidget {
+  final String url;
+  final bool seen;
+  final bool isme;
+  final String id;
+  const make_video({
+    Key? key,
+    required this.url,
+    required this.seen,
+    required this.isme,
+    required this.id,
+  }) : super(key: key);
+  @override
+  State<make_video> createState() => _make_videoState();
+}
+
+class _make_videoState extends State<make_video> {
+  VideoPlayerController? _controller;
+    DownloaderCore? _core;
+
+  double _percent=0.0;
+ @override
+  void initState() {
+    super.initState();
+    inilzee();
+  
+  }
+  @override
+  void dispose() {
+    super.dispose();
+    if(_controller!=null)
+       _controller!.dispose();
+    if(_core!=null&&_controller==null)
+    _core!.cancel();   
+  }
+  @override
+  Widget build(BuildContext context) {
+    _controller==null?null:
+    print(_controller!.value.size);
+    return Container(
+      width: 220,
+      child:_controller==null?Center(child: CircularPercentIndicator(
+        radius: 20,
+        lineWidth: 1,
+        percent: _percent,
+        animation: true,
+        animationDuration: 100,
+        progressColor: Colors.pink,
+        backgroundColor: Get.isDarkMode?Colors.black:Colors.white,
+      ),): Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          SizedBox(
+            width:_controller!.value.isInitialized?  300:15,
+            child: _controller!.value.isInitialized? FittedBox(
+              fit: BoxFit.cover,
+              child: GestureDetector(
+                onTap:() {
+                      setState(() {
+                      _controller!.value.isPlaying? _controller!.pause()
+                      :_controller!.play();
+                      });
+                } ,
+                child: Stack(
+                  children: [
+                    SizedBox(
+                      width: _controller!.value.size.width,
+                      height: _controller!.value.size.height,
+                      child: AspectRatio(
+                        aspectRatio: _controller!.value.aspectRatio,
+                        child: VideoPlayer(_controller!),),
+                    ),
+                  ],
+                ),
+              ),
+            ):  Container(),
+          ),
+          SizedBox(height: 15, child: VideoProgressIndicator(_controller!
+          , allowScrubbing: true)),
+            if(widget.isme)
+          Icon(widget.seen? Icons.visibility:Icons.visibility_off)      
+            ],
+      ),
+    );
+  }
+
+  Future<void> dowlnload_file(String filepath) async {
+    _core=await dowlouadfromurl( '${widget.id}.mp4', 'videos',widget.url,(val){
+              setState(() {
+                _percent=val;
+              });
+    },(){
+      
+        _controller=VideoPlayerController.
+                file(File(filepath+'/${widget.id}.mp4'));
+                _controller!.initialize().then((value) {
+                  setState(() {
+                  });
+                });
+    });
+  }
+
+  void inilzee() async{  
+     Directory? dic= await getExternalStorageDirectory();
+            if(dic==null)
+                throw 'un acceplte';
+            String filepath =dic.path+'/chats/videos';
+            if(await  file_exists('${widget.id}.mp4',filepath)==false)
+                  await   dowlnload_file(filepath);   
+            else{
+               _controller=VideoPlayerController.
+                file(File(filepath+'/${widget.id}.mp4'));
+                _controller!.initialize().then((value) {
+                  setState(() {
+                  });
+                });
+            }    
+  }
+
+ 
+}
+ Future<bool> file_exists(String filename,String filepath,) async{
+bool directoryExists = await Directory(filepath).exists();
+bool fileExists = await File('$filepath/$filename').exists();
+      return directoryExists&&fileExists;
+ }
+Future<DownloaderCore> dowlouadfromurl(String filename, String dicname,String url,Function? fnc,Function? fnc4) async {
+   Directory? dic= await getExternalStorageDirectory();
+       if(dic==null)
+          throw 'un acceplte';
+       String filepath =dic.path+'/chats/$dicname';   
+       if(! await Directory(filepath).exists()){
+         if(!await Directory( dic.path+'/chats').exists())
+               await Directory( dic.path+'/chats').create();
+              await Directory(filepath).create();
+       }
+              print('sat');
+              final downloaderUtils = DownloaderUtils(
+                  progressCallback: (current, total) {
+                    if(fnc!=null)
+                   fnc(current/total);
+                  },
+                  file: File('$filepath/$filename'),
+                  progress: ProgressImplementation(),
+                  onDone: () {
+                    if(fnc4!=null)
+                      fnc4();
+                  },
+                  deleteOnCancel: true,
+                );
+                              print('sataaa');
+           return  await Flowder.download(url, downloaderUtils);     
 }

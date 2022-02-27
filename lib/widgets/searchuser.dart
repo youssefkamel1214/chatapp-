@@ -18,7 +18,7 @@ class SearchUser extends StatelessWidget {
                margin:const EdgeInsets.all( 5.0),
                padding:const EdgeInsets.all(8.0),
                decoration: BoxDecoration(
-                 color: Colors.pink,
+                 color:Theme.of(context).primaryColor,
                  borderRadius: BorderRadius.circular(20)
                ), 
                child: Column(mainAxisSize: MainAxisSize.min,
