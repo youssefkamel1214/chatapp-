@@ -6,91 +6,92 @@ import 'package:chatapp/screens/splashscreen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-Rx<bool>loading=true.obs;
-void main()async {
+import 'package:sizer/sizer.dart';
+
+Rx<bool> loading = true.obs;
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  Firebase.initializeApp().then((value) => loading.update((val) => loading.value=false));
+  Firebase.initializeApp()
+      .then((value) => loading.update((val) => loading.value = false));
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
- 
+
   @override
   Widget build(BuildContext context) {
-   Chatchannelcont chatchannelcont= Chatchannelcont();
+    Chatchannelcont chatchannelcont = Chatchannelcont();
     Get.put(Authprovider());
     Get.put(chatchannelcont);
-    return GetMaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        primarySwatch: Colors.pink,
-        backgroundColor: Color.fromARGB(255, 44, 138, 161),
-        scaffoldBackgroundColor: Color.fromARGB(255, 44, 138, 161),
-        accentColor: Colors.deepPurple,
-        accentColorBrightness: Brightness.dark,
-        appBarTheme:const AppBarTheme(
-          backgroundColor: Color.fromARGB(255, 44, 138, 161),
-          elevation: .5
-        ),
-        elevatedButtonTheme:ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-          primary: Colors.pink,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20)
-          )
-          )
-        ) ,
-        buttonTheme:ButtonTheme.of(context).copyWith(
-          buttonColor: Colors.pink,
-          textTheme:ButtonTextTheme.primary ,  
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          )
-        ) 
-      ),
-      darkTheme:ThemeData(
-        primarySwatch: Colors.pink,
-        backgroundColor: Color.fromARGB(255, 33, 35, 36),
-        scaffoldBackgroundColor: Color.fromARGB(255, 33, 35, 36),
-        accentColor: Colors.deepPurple,
-        accentColorBrightness: Brightness.light,
-        appBarTheme:const AppBarTheme(
-          brightness: Brightness.light,
-          backgroundColor: Color.fromARGB(255, 33, 35, 36),
-          elevation: .5
-        ),
-        elevatedButtonTheme:ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-          primary: Colors.pink,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20)
-          )
-          )
-        ) ,
-        buttonTheme:ButtonTheme.of(context).copyWith(
-          buttonColor: Colors.pink,
-          textTheme:ButtonTextTheme.primary ,  
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          )
-        ) 
-      ) ,
-      debugShowCheckedModeBanner:false,
-      home:  Obx(
-        () {
-          return loading.value?const Splashscreen(content: 'we make ever thing ready',) : StreamBuilder(stream: FirebaseAuth.instance.authStateChanges(),builder: (ctx,snapshot){
-            if(snapshot.connectionState==ConnectionState.waiting)
-               return const Splashscreen(content:'we make ever thing ready');
-            if(snapshot.hasData)
-              return MyHomePage(email: FirebaseAuth.instance.currentUser!.email!,);
-            else 
-              return AuthScreen() ;
-          },);
-        }
+    return Sizer(
+      builder: (context, orientation, deviceType) => GetMaterialApp(
+        title: 'Flutter Demo',
+        theme: ThemeData(
+            backgroundColor: const Color.fromARGB(255, 44, 138, 161),
+            scaffoldBackgroundColor: const Color.fromARGB(255, 44, 138, 161),
+            accentColorBrightness: Brightness.dark,
+            appBarTheme: const AppBarTheme(
+                backgroundColor: Color.fromARGB(255, 44, 138, 161),
+                elevation: .5),
+            elevatedButtonTheme: ElevatedButtonThemeData(
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.pink,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20.sp)))),
+            buttonTheme: ButtonTheme.of(context).copyWith(
+                buttonColor: Colors.pink,
+                textTheme: ButtonTextTheme.primary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                )),
+            colorScheme: ColorScheme.fromSwatch(primarySwatch: Colors.pink)
+                .copyWith(secondary: Colors.deepPurple)),
+        darkTheme: ThemeData(
+            backgroundColor: const Color.fromARGB(255, 33, 35, 36),
+            scaffoldBackgroundColor: const Color.fromARGB(255, 33, 35, 36),
+            accentColorBrightness: Brightness.light,
+            appBarTheme: const AppBarTheme(
+                backgroundColor: Color.fromARGB(255, 33, 35, 36),
+                elevation: .5,
+                systemOverlayStyle: SystemUiOverlayStyle.dark),
+            elevatedButtonTheme: ElevatedButtonThemeData(
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.pink,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20.sp)))),
+            buttonTheme: ButtonTheme.of(context).copyWith(
+                buttonColor: Colors.pink,
+                textTheme: ButtonTextTheme.primary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20.sp),
+                )),
+            colorScheme: ColorScheme.fromSwatch(primarySwatch: Colors.pink)
+                .copyWith(secondary: Colors.deepPurple)),
+        debugShowCheckedModeBanner: false,
+        home: Obx(() {
+          return loading.value
+              ? const Splashscreen(
+                  content: 'we make ever thing ready',
+                )
+              : StreamBuilder(
+                  stream: FirebaseAuth.instance.authStateChanges(),
+                  builder: (ctx, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting)
+                      return const Splashscreen(
+                          content: 'we make ever thing ready');
+                    if (snapshot.hasData)
+                      return MyHomePage(
+                        email: FirebaseAuth.instance.currentUser!.email!,
+                      );
+                    else
+                      return AuthScreen();
+                  },
+                );
+        }),
       ),
     );
   }
 }
-

@@ -37,6 +37,7 @@ dependencies:
   flowder: ^0.2.0
   percent_indicator: ^4.0.0
   open_file: ^3.2.1
+  sizer: ^2.0.15
 dev_dependencies:
   flutter_test:
     sdk: flutter
