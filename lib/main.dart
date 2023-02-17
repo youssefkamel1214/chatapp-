@@ -10,11 +10,14 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:sizer/sizer.dart';
 
+import 'firebase_options.dart';
+
 Rx<bool> loading = true.obs;
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  Firebase.initializeApp()
-      .then((value) => loading.update((val) => loading.value = false));
+  Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  ).then((value) => loading.update((val) => loading.value = false));
   runApp(const MyApp());
 }
 
@@ -30,7 +33,6 @@ class MyApp extends StatelessWidget {
       builder: (context, orientation, deviceType) => GetMaterialApp(
         title: 'Flutter Demo',
         theme: ThemeData(
-            backgroundColor: const Color.fromARGB(255, 44, 138, 161),
             scaffoldBackgroundColor: const Color.fromARGB(255, 44, 138, 161),
             accentColorBrightness: Brightness.dark,
             appBarTheme: const AppBarTheme(
@@ -48,7 +50,8 @@ class MyApp extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20),
                 )),
             colorScheme: ColorScheme.fromSwatch(primarySwatch: Colors.pink)
-                .copyWith(secondary: Colors.deepPurple)),
+                .copyWith(secondary: Colors.deepPurple)
+                .copyWith(background: const Color.fromARGB(255, 44, 138, 161))),
         darkTheme: ThemeData(
             backgroundColor: const Color.fromARGB(255, 33, 35, 36),
             scaffoldBackgroundColor: const Color.fromARGB(255, 33, 35, 36),
